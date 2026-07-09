@@ -1,0 +1,63 @@
+name: CI — Build, Scan & Push to ECR
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  ECR_REPOSITORY_URI: ${{ secrets.ECR_REPOSITORY_URI }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  build-scan-push:
+    name: Build, Scan & Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate semantic version
+        id: version
+        run: |
+          MAJOR=1
+          MINOR=0
+          PATCH=${{ github.run_number }}
+          echo "VERSION=v${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --target production \
+            -t ${{ env.ECR_REPOSITORY_URI }}:${{ steps.version.outputs.VERSION }} \
+            -t ${{ env.ECR_REPOSITORY_URI }}:latest \
+            .
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ECR_REPOSITORY_URI }}:${{ steps.version.outputs.VERSION }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL
+          ignore-unfixed: true
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ env.ECR_REPOSITORY_URI }}:${{ steps.version.outputs.VERSION }}
+          docker push ${{ env.ECR_REPOSITORY_URI }}:latest
