@@ -16,7 +16,7 @@ A lightweight REST API built with Node.js and Express, containerized with Docker
 ### Run with Node.js
 
 ```bash
-git clone https://github.com/AnitaAliCloud/hng-stage1-api.git
+git clone https://github.com/AnitaAliCloud/nodejs-api-ci.git
 cd hng-stage1-api
 npm install
 node index.js
