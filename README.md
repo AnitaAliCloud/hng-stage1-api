@@ -39,7 +39,7 @@ The API will be available at `http://localhost:3000`
 | GET | `/health` | `{ "message": "healthy" }` |
 | GET | `/me` | `{ "name", "email", "github" }` |
 
-## CI/CD Pipeline
+## CI Pipeline
 
 Every push to `main` triggers a GitHub Actions workflow that:
 1. Builds the Docker image using a multi-stage Dockerfile
